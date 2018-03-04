@@ -88,7 +88,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(四)：总结/" data-id="cjecoexj60003zgx9w9uyaql5" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(四)：总结/" data-id="cjecohzxz000124x9ttjmbqx2" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -120,7 +120,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="redis是单线程的服务器"><a href="#redis是单线程的服务器" class="headerlink" title="redis是单线程的服务器"></a><strong>redis是单线程的服务器</strong></h2><p>Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。</p>
+        <h2 id="1-redis是单线程的服务器"><a href="#1-redis是单线程的服务器" class="headerlink" title="1.redis是单线程的服务器"></a><strong>1.redis是单线程的服务器</strong></h2><p>Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。</p>
 <p><strong>所以，Redis的事件循环是在单线程中进行的，因此要确保快速的进行事件处理，这样事件循环中的后续任务才不会被阻塞。</strong></p>
 <p>在Redis中影响时延的场景主要有三种：</p>
 <ul>
@@ -137,7 +137,7 @@
 <p><strong>smembers：</strong>smembers是线上实时应用场景中使用频率非常高的一个命令，<strong>可以从设计层面来考虑： 可以控制集合的数量。</strong>比如原来使用一个键来存储一年的记录，数据量大，我们可以使用12个键来分别保存12个月的记录，或者365个键来保存每一天的记录，将集合的规模控制在可接受的范围。</p>
 <p><img src="1.png" alt=""></p>
 <p>后面两个问题，平时较少用到，参考 <a href="http://webcache.googleusercontent.com/search?q=cache:tRr5yWYYvLMJ:www.tk4479.net/tian_ex/article/details/53283871+&amp;cd=8&amp;hl=zh-CN&amp;ct=clnk" target="_blank" rel="noopener">http://webcache.googleusercontent.com/search?q=cache:tRr5yWYYvLMJ:www.tk4479.net/tian_ex/article/details/53283871+&amp;cd=8&amp;hl=zh-CN&amp;ct=clnk</a></p>
-<h2 id="Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"><a href="#Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。" class="headerlink" title="Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"></a>Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。</h2><p>1.memcached是多线程的，使用<strong>master-worker</strong>的方式，<strong>master线程监听端口，建立连接，然后顺序分配给各个worker线程</strong>。</p>
+<h2 id="2-Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"><a href="#2-Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。" class="headerlink" title="2.Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"></a>2.Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。</h2><p>1.memcached是多线程的，使用<strong>master-worker</strong>的方式，<strong>master线程监听端口，建立连接，然后顺序分配给各个worker线程</strong>。</p>
 <p>2.每一个worker线程都有一个event loop，它们服务不同的客户端。 </p>
 <p><strong>connection</strong>：</p>
 <p>1) master线程和worker线程之间使用管道通信，读端加入event loop，监听可读事件。</p>
@@ -146,7 +146,7 @@
 <p><img src="2.png" alt=""></p>
 <p>mencached线程池分析 <a href="http://blog.csdn.net/flyqwang/article/details/18814797" target="_blank" rel="noopener">http://blog.csdn.net/flyqwang/article/details/18814797</a> </p>
 <p>属于multi-reactors模式，不管是master线程还是worker线程，都要处理事件，master只处理连接事件，worker处理读写事件。</p>
-<h2 id="Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"><a href="#Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。" class="headerlink" title="Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"></a>Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。</h2><p><img src="3.png" alt=""></p>
+<h2 id="3-Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"><a href="#3-Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。" class="headerlink" title="3.Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"></a>3.Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。</h2><p><img src="3.png" alt=""></p>
 <p><img src="4.png" alt=""></p>
 <p>从上图可以看出</p>
 <p>1）master进程先建好需要listen的socket后，然后再fork出多个woker进程，这样<strong>每个worker进程都可以去accept这个socket</strong>。</p>
@@ -156,7 +156,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/" data-id="cjecoexix0001zgx9elobhgxq" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/" data-id="cjecohzy6000224x9embu6ed4" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -220,7 +220,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/" data-id="cjecoexj40002zgx93k3wampl" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/" data-id="cjecohzy9000424x9s3al6iax" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -303,7 +303,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/" data-id="cjecoexiq0000zgx9xp2bale9" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/" data-id="cjecohzxs000024x9ld3rqdcg" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -434,7 +434,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/" data-id="cjecoexjp0004zgx9azv5qi22" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/" data-id="cjecohzy8000324x9mbh70jzg" class="article-share-link">Teilen</a>
       
       
     </footer>
