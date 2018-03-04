@@ -7,20 +7,20 @@
   
   <title>通过core文件解决SIGSEGV问题 | 湖人总冠军</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。   这个问题之前没碰过，感觉要凉了，还是先问问小伙伴吧….于是找ben对比检查下配置文件，各种改配置文件(nginx的rewrite，php-fpm.conf)，我擦，还是502，还是SIGSEGV。 那就只能Google了… 半天过去了，我还是擦，网上都是说">
+  <meta name="description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。 1upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: [dev.meijiabang.cn">
 <meta property="og:type" content="article">
 <meta property="og:title" content="通过core文件解决SIGSEGV问题">
 <meta property="og:url" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/index.html">
 <meta property="og:site_name" content="湖人总冠军">
-<meta property="og:description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。   这个问题之前没碰过，感觉要凉了，还是先问问小伙伴吧….于是找ben对比检查下配置文件，各种改配置文件(nginx的rewrite，php-fpm.conf)，我擦，还是502，还是SIGSEGV。 那就只能Google了… 半天过去了，我还是擦，网上都是说">
+<meta property="og:description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。 1upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: [dev.meijiabang.cn">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/1.png">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/2.png">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/3.png">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/4.png">
-<meta property="og:updated_time" content="2018-03-04T07:51:30.000Z">
+<meta property="og:updated_time" content="2018-03-04T07:57:38.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="通过core文件解决SIGSEGV问题">
-<meta name="twitter:description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。   这个问题之前没碰过，感觉要凉了，还是先问问小伙伴吧….于是找ben对比检查下配置文件，各种改配置文件(nginx的rewrite，php-fpm.conf)，我擦，还是502，还是SIGSEGV。 那就只能Google了… 半天过去了，我还是擦，网上都是说">
+<meta name="twitter:description" content="好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。 1upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: [dev.meijiabang.cn">
 <meta name="twitter:image" content="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/1.png">
   
     <link rel="alternate" href="/atom.xml" title="湖人总冠军" type="application/atom+xml">
@@ -59,7 +59,7 @@
         
           <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Suche"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -91,7 +91,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>好久没有折腾环境，上周在本地搭建环境，php-fpm起了，nginx也起了，访问接口都是502。看nginx日志，说是后端过早关闭了连接。</p>
-<!--upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: [dev.meijiabang.cn](http://dev.meijiabang.cn/), request...-->
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">upstream</span> prematurely closed connection while reading response header from upstream, client: <span class="number">127.0.0.1</span>, server: [dev.meijiabang.cn](http://dev.meijiabang.cn/), request...</span><br></pre></td></tr></table></figure>
 <p><img src="1.png" alt=""></p>
 <p>这个问题之前没碰过，感觉要凉了，还是先问问小伙伴吧….于是找ben对比检查下配置文件，各种改配置文件(nginx的rewrite，php-fpm.conf)，我擦，还是502，还是SIGSEGV。</p>
 <p>那就只能Google了…</p>
@@ -189,7 +189,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/" data-id="cjechzxnw0000vyx9hwcjje44" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2018/03/04/通过core文件解决SIGSEGV问题/" data-id="cjeci7tjw00000kx9henuo3zt" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -213,7 +213,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
+    <h3 class="widget-title">Archiv</h3>
     <div class="widget">
       <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li></ul>
     </div>
@@ -223,7 +223,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
+    <h3 class="widget-title">letzter Beitrag</h3>
     <div class="widget">
       <ul>
         
