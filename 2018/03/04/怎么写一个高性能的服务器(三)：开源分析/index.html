@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>怎么写一个高性能的服务器(三)：开源分析 | 湖人总冠军</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="redis是单线程的服务器Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。 所以，Redis的事件循环是在单线程中进行的，因此要确保快速的进行事件处理，这样事件循环中的后续任务才不会被阻塞。 在Redis中影响时延的场景主要有三种：  耗时长的命令造成的阻塞； fork产生的阻塞； 持久化造成的阻塞；  耗时长的命令造成的阻塞">
+<meta property="og:type" content="article">
+<meta property="og:title" content="怎么写一个高性能的服务器(三)：开源分析">
+<meta property="og:url" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/index.html">
+<meta property="og:site_name" content="湖人总冠军">
+<meta property="og:description" content="redis是单线程的服务器Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。 所以，Redis的事件循环是在单线程中进行的，因此要确保快速的进行事件处理，这样事件循环中的后续任务才不会被阻塞。 在Redis中影响时延的场景主要有三种：  耗时长的命令造成的阻塞； fork产生的阻塞； 持久化造成的阻塞；  耗时长的命令造成的阻塞">
+<meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/1.png">
+<meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/2.png">
+<meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/3.png">
+<meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/4.png">
+<meta property="og:updated_time" content="2018-03-04T10:46:46.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="怎么写一个高性能的服务器(三)：开源分析">
+<meta name="twitter:description" content="redis是单线程的服务器Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。 所以，Redis的事件循环是在单线程中进行的，因此要确保快速的进行事件处理，这样事件循环中的后续任务才不会被阻塞。 在Redis中影响时延的场景主要有三种：  耗时长的命令造成的阻塞； fork产生的阻塞； 持久化造成的阻塞；  耗时长的命令造成的阻塞">
+<meta name="twitter:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="湖人总冠军" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">湖人总冠军</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Suche"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-怎么写一个高性能的服务器(三)：开源分析" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/" class="article-date">
+  <time datetime="2018-03-04T10:11:57.000Z" itemprop="datePublished">2018-03-04</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      怎么写一个高性能的服务器(三)：开源分析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="redis是单线程的服务器"><a href="#redis是单线程的服务器" class="headerlink" title="redis是单线程的服务器"></a><strong>redis是单线程的服务器</strong></h2><p>Reactor模型就是一个不断循环等待的单独线程，就一个EvenLoop，redis是Reactor模式最简单的版本。</p>
+<p><strong>所以，Redis的事件循环是在单线程中进行的，因此要确保快速的进行事件处理，这样事件循环中的后续任务才不会被阻塞。</strong></p>
+<p>在Redis中影响时延的场景主要有三种：</p>
+<ul>
+<li>耗时长的命令造成的阻塞；</li>
+<li>fork产生的阻塞；</li>
+<li>持久化造成的阻塞；</li>
+</ul>
+<p><strong>耗时长的命令造成的阻塞</strong></p>
+<p>耗时长的命令主要包括keys、sort、smembers等。</p>
+<p><strong>对于keys命令</strong>，它是用于查找所有符合给定模式pattern的key，时间复杂度为O(N)， N为数据库中key的数量。当数据库中的个数达到千万时，这个命令会造成读写线程阻塞数秒。类似的命令有sunion sort等操作。</p>
+<p><strong>对于smembers命令</strong>，它是用于获取集合全集，时间复杂度为O(N)，N为集合中的数量。如果一个集合中保存了千万级的数据，一次性取回也会造成事件处理线程的长时间阻塞。</p>
+<p>解决方案：</p>
+<p><strong>keys</strong>：将它分离出去，比如单独使用<strong>一个redis从节点</strong>专门用于keys、sort等耗时操作，通常这些查询<strong>一般不会是线上的实时业务</strong>，对时延要求不高。</p>
+<p><strong>smembers：</strong>smembers是线上实时应用场景中使用频率非常高的一个命令，<strong>可以从设计层面来考虑： 可以控制集合的数量。</strong>比如原来使用一个键来存储一年的记录，数据量大，我们可以使用12个键来分别保存12个月的记录，或者365个键来保存每一天的记录，将集合的规模控制在可接受的范围。</p>
+<p><img src="1.png" alt=""></p>
+<p>后面两个问题，平时较少用到，参考 <a href="http://webcache.googleusercontent.com/search?q=cache:tRr5yWYYvLMJ:www.tk4479.net/tian_ex/article/details/53283871+&amp;cd=8&amp;hl=zh-CN&amp;ct=clnk" target="_blank" rel="noopener">http://webcache.googleusercontent.com/search?q=cache:tRr5yWYYvLMJ:www.tk4479.net/tian_ex/article/details/53283871+&amp;cd=8&amp;hl=zh-CN&amp;ct=clnk</a></p>
+<h2 id="Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"><a href="#Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。" class="headerlink" title="Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。"></a>Memcache是基于libevent，libevent是个高性能网络库，也是基于Reactor模型。</h2><p>1.memcached是多线程的，使用<strong>master-worker</strong>的方式，<strong>master线程监听端口，建立连接，然后顺序分配给各个worker线程</strong>。</p>
+<p>2.每一个worker线程都有一个event loop，它们服务不同的客户端。 </p>
+<p><strong>connection</strong>：</p>
+<p>1) master线程和worker线程之间使用管道通信，读端加入event loop，监听可读事件。</p>
+<p><strong>2) 每个worker线程都有一个就绪连接队列</strong>，master线程连接连接后，将连接的item放入这个队列，然后往该线程的管道的写端写入一个connect命令。</p>
+<p>3) 这样event loop中加入的管道读端就会就绪，worker线程读取命令，解析命令发现是有连接，然后就会去自己的就绪队列中获取连接，并进行处理。</p>
+<p><img src="2.png" alt=""></p>
+<p>mencached线程池分析 <a href="http://blog.csdn.net/flyqwang/article/details/18814797" target="_blank" rel="noopener">http://blog.csdn.net/flyqwang/article/details/18814797</a> </p>
+<p>属于multi-reactors模式，不管是master线程还是worker线程，都要处理事件，master只处理连接事件，worker处理读写事件。</p>
+<h2 id="Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"><a href="#Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。" class="headerlink" title="Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。"></a>Nginx是多进程服务器，Memcache是多线程服务器，但都是采用Multi-Reactors模式。</h2><p><img src="3.png" alt=""></p>
+<p><img src="4.png" alt=""></p>
+<p>从上图可以看出</p>
+<p>1）master进程先建好需要listen的socket后，然后再fork出多个woker进程，这样<strong>每个worker进程都可以去accept这个socket</strong>。</p>
+<p>2）当一个client连接到来时，所有accept的worker进程都会受到通知，但只有一个进程可以accept成功，其它的则会accept失败。Nginx提供了一把共享锁accept_mutex来保证同一时刻只有一个worker进程在accept连接，从而解决惊群问题。</p>
+<p>3）当一个worker进程accept这个连接后，就开始读取请求，解析请求，处理请求，产生数据后，再返回给客户端，最后才断开连接，这样一个完成的请求就结束了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/" data-id="cjecoa9by0001w9x9j19l60ai" class="article-share-link">Teilen</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">怎么写一个高性能的服务器(二)：编程细节</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/">怎么写一个高性能的服务器(三)：开源分析</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/">怎么写一个高性能的服务器(二)：编程细节</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(一)：概述/">怎么写一个高性能的服务器(一)：概述</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/通过core文件解决SIGSEGV问题/">通过core文件解决SIGSEGV问题</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 Kyrie<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>

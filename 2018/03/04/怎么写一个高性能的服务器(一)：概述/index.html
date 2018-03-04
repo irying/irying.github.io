@@ -5,20 +5,20 @@
   
 
   
-  <title>怎么写一个高性能的服务器 | 湖人总冠军</title>
+  <title>怎么写一个高性能的服务器(一)：概述 | 湖人总冠军</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="一、概述写一个高性能服务器，像redis、memcache和nginx那样，支撑很高的并发，稳定地解决性能问题，其实并不是件很难的事。 本文先从网络编程的细节出发，讲讲网络编程会碰到的问题；再介绍业界流行到2016年的事件驱动模型Reactor，这个模型是并发编程必须要学习的。 为什么说流行到2016年呢？因为2016年Go语言火遍全球，Go语言采用的并发编程模型就是– goroutine），将开">
 <meta property="og:type" content="article">
-<meta property="og:title" content="怎么写一个高性能的服务器">
+<meta property="og:title" content="怎么写一个高性能的服务器(一)：概述">
 <meta property="og:url" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/index.html">
 <meta property="og:site_name" content="湖人总冠军">
 <meta property="og:description" content="一、概述写一个高性能服务器，像redis、memcache和nginx那样，支撑很高的并发，稳定地解决性能问题，其实并不是件很难的事。 本文先从网络编程的细节出发，讲讲网络编程会碰到的问题；再介绍业界流行到2016年的事件驱动模型Reactor，这个模型是并发编程必须要学习的。 为什么说流行到2016年呢？因为2016年Go语言火遍全球，Go语言采用的并发编程模型就是– goroutine），将开">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/1.png">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/2.png">
 <meta property="og:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/3.png">
-<meta property="og:updated_time" content="2018-03-04T08:29:20.000Z">
+<meta property="og:updated_time" content="2018-03-04T10:10:24.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="怎么写一个高性能的服务器">
+<meta name="twitter:title" content="怎么写一个高性能的服务器(一)：概述">
 <meta name="twitter:description" content="一、概述写一个高性能服务器，像redis、memcache和nginx那样，支撑很高的并发，稳定地解决性能问题，其实并不是件很难的事。 本文先从网络编程的细节出发，讲讲网络编程会碰到的问题；再介绍业界流行到2016年的事件驱动模型Reactor，这个模型是并发编程必须要学习的。 为什么说流行到2016年呢？因为2016年Go语言火遍全球，Go语言采用的并发编程模型就是– goroutine），将开">
 <meta name="twitter:image" content="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/1.png">
   
@@ -81,7 +81,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      怎么写一个高性能的服务器
+      怎么写一个高性能的服务器(一)：概述
     </h1>
   
 
@@ -140,7 +140,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/" data-id="cjecmuijt00007fx9ees0yrt0" class="article-share-link">Teilen</a>
+      <a data-url="http://yoursite.com/2018/03/04/怎么写一个高性能的服务器(一)：概述/" data-id="cjecoa9br0000w9x91ni7hzu2" class="article-share-link">Teilen</a>
       
       
     </footer>
@@ -149,11 +149,11 @@
     
 <nav id="article-nav">
   
-    <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程模型/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/" id="article-nav-newer" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Neuer</strong>
       <div class="article-nav-title">
         
-          怎么写一个高性能的服务器(二)：编程模型
+          怎么写一个高性能的服务器(二)：编程细节
         
       </div>
     </a>
@@ -198,11 +198,15 @@
       <ul>
         
           <li>
-            <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程模型/">怎么写一个高性能的服务器(二)：编程模型</a>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(三)：开源分析/">怎么写一个高性能的服务器(三)：开源分析</a>
           </li>
         
           <li>
-            <a href="/2018/03/04/怎么写一个高性能的服务器(一)：概述/">怎么写一个高性能的服务器</a>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(二)：编程细节/">怎么写一个高性能的服务器(二)：编程细节</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/怎么写一个高性能的服务器(一)：概述/">怎么写一个高性能的服务器(一)：概述</a>
           </li>
         
           <li>
