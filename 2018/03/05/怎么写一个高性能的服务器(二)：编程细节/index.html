@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>怎么写一个高性能的服务器(二)：编程细节 | 湖人总冠军</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="看了这个系列做的整理http://blog.csdn.net/voidccc/article/details/8719752 1.最简单的epoll处理1234使用epoll的三个函数int epoll_create(int size) 创建一个epoll文件描述符int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="怎么写一个高性能的服务器(二)：编程细节">
+<meta property="og:url" content="http://yoursite.com/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/index.html">
+<meta property="og:site_name" content="湖人总冠军">
+<meta property="og:description" content="看了这个系列做的整理http://blog.csdn.net/voidccc/article/details/8719752 1.最简单的epoll处理1234使用epoll的三个函数int epoll_create(int size) 创建一个epoll文件描述符int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)">
+<meta property="og:image" content="http://yoursite.com/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/1.png">
+<meta property="og:updated_time" content="2018-03-06T14:55:02.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="怎么写一个高性能的服务器(二)：编程细节">
+<meta name="twitter:description" content="看了这个系列做的整理http://blog.csdn.net/voidccc/article/details/8719752 1.最简单的epoll处理1234使用epoll的三个函数int epoll_create(int size) 创建一个epoll文件描述符int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)">
+<meta name="twitter:image" content="http://yoursite.com/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="湖人总冠军" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">湖人总冠军</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-怎么写一个高性能的服务器(二)：编程细节" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/" class="article-date">
+  <time datetime="2018-03-05T09:58:13.000Z" itemprop="datePublished">2018-03-05</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      怎么写一个高性能的服务器(二)：编程细节
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>看了这个系列做的整理<a href="http://blog.csdn.net/voidccc/article/details/8719752" target="_blank" rel="noopener">http://blog.csdn.net/voidccc/article/details/8719752</a></p>
+<h2 id="1-最简单的epoll处理"><a href="#1-最简单的epoll处理" class="headerlink" title="1.最简单的epoll处理"></a>1.最简单的epoll处理</h2><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">使用epoll的三个函数</span><br><span class="line">int epoll_create(int size) 创建一个epoll文件描述符</span><br><span class="line">int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event) 将socket描述符加入/移出epoll监听，修改注册事件</span><br><span class="line">int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout) 在epoll描述符上等待事件的发生，并获得事件</span><br></pre></td></tr></table></figure>
+<h2 id="2-Reactor"><a href="#2-Reactor" class="headerlink" title="2.Reactor"></a>2.Reactor</h2><p><img src="1.png" alt=""></p>
+<h3 id="多了3个类，一个是事件分发器类，一个IO复用类，一个事件处理类。"><a href="#多了3个类，一个是事件分发器类，一个IO复用类，一个事件处理类。" class="headerlink" title="多了3个类，一个是事件分发器类，一个IO复用类，一个事件处理类。"></a>多了3个类，一个是事件分发器类，一个IO复用类，一个事件处理类。</h3><p><strong>1）Channel类：每个Channel对象自始至终只负责一个文件描述符的IO事件分发</strong></p>
+<p><strong>以前是用epoll_wait获得事件后，直接就进行了事件处理；</strong></p>
+<p><strong>现在通过添加Channel，程序终于可以将事件处理程序写在一个单独的函数中，然后将这个函数注册到Channel上。（注册–回调）</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">vector</span>&lt;Channel*&gt; channels; </span><br><span class="line"><span class="number">123</span>         <span class="keyword">int</span> fds = epoll_wait(_epollfd, _events, MAX_EVENTS, <span class="number">-1</span>); </span><br><span class="line">...         ... </span><br><span class="line"><span class="number">129</span>         <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; fds; i++) </span><br><span class="line"><span class="number">130</span>         &#123; </span><br><span class="line"><span class="number">131</span>             Channel* pChannel = <span class="keyword">static_cast</span>&lt;Channel*&gt;(_events[i].data.ptr); </span><br><span class="line"><span class="number">132</span>             pChannel-&gt;setRevents(_events[i].events); </span><br><span class="line"><span class="number">133</span>             channels.push_back(pChannel); </span><br><span class="line"><span class="number">134</span>         &#125; </span><br><span class="line"><span class="number">135</span>  </span><br><span class="line"><span class="number">136</span>         <span class="built_in">vector</span>&lt;Channel*&gt;::iterator it; </span><br><span class="line"><span class="number">137</span>         <span class="keyword">for</span>(it = channels.begin(); it != channels.end(); ++it) </span><br><span class="line"><span class="number">138</span>         &#123; </span><br><span class="line"><span class="number">139</span>             (*it)-&gt;handleEvent(); </span><br><span class="line"><span class="number">140</span>         &#125; </span><br><span class="line"> </span><br><span class="line">第一步<span class="number">129</span>行到<span class="number">134</span>行 ，遍历所有的事件，从其data字段中拿出和这个socket相关的Channel指针，并且将其_revents字段填充好，最后将Channel插入到<span class="built_in">vector</span>中</span><br><span class="line">第二步<span class="number">136</span>行到<span class="number">140</span>行，遍历<span class="built_in">vector</span>，逐一调用其中的handleEvent方法。</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span>注册</span><br><span class="line">pChannel-&gt;setCallBack(<span class="keyword">this</span>); </span><br><span class="line">pChannel-&gt;enableReading(); </span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="number">2.</span>handleEvent里面回调</span><br><span class="line"> </span><br><span class="line"><span class="keyword">void</span> Channel::handleEvent()</span><br><span class="line">&#123;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">if</span>(_revents &amp; EPOLLIN)</span><br><span class="line"> </span><br><span class="line">      _callBack-&gt;run(_sockfd);</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在只有两种事件，<strong>接受新连接</strong>和<strong>读写数据</strong>，之前epoll是放在一起处理了。</p>
+<p>现在加入了<strong>Acceptor</strong>和<strong>TcpConnection</strong>，终于可以将事件分配到独立的类处理了</p>
+<p>这也是应该的，因为接受连接和读写数据根本就是两种性质的事件，处理方式也完全不同，理应放到两个不同的类中。</p>
+<h2 id="2）Acceptor类：accept到连接就交给TcpServer创建"><a href="#2）Acceptor类：accept到连接就交给TcpServer创建" class="headerlink" title="2）Acceptor类：accept到连接就交给TcpServer创建"></a><strong>2）Acceptor类：accept到连接就交给TcpServer创建</strong></h2><h2 id="3）TcpConnection类：由TcpServer所创建，然后开始读写数据"><a href="#3）TcpConnection类：由TcpServer所创建，然后开始读写数据" class="headerlink" title="3）TcpConnection类：由TcpServer所创建，然后开始读写数据"></a><strong>3）TcpConnection类：由TcpServer所创建，然后开始读写数据</strong></h2><h2 id="4）EvenLoop类和Epoll类："><a href="#4）EvenLoop类和Epoll类：" class="headerlink" title="4）EvenLoop类和Epoll类："></a><strong>4）EvenLoop类和Epoll类：</strong></h2><p>1 先来看EventLoop，根据名字可以猜测这个类的作用是事件循环，其实这个类就是用来包装for循环的，也就是那个套在epoll_wait外面的for循环，<strong><u>这个for循环可以说是整个程序最核心的部分，for循环等待在epoll_wait上，然后遍历返回的每个事件，先通知到Channel，然后由Channel通知到最终的事件处理程序（位于Acceptor和TcpConnection中）。</u></strong>在上一个版本中。for循环位于TcpServer里，现在我们把它移动到EventLoop的loop方法里，用while代替for，作用跟之前的for循环一样：等待在epoll_wait上，当有事件发生时，回调Channel。当然，EventLoop::loop()不是直接调用epoll_wait，而是使用了其包装类Epoll。</p>
+<p>2 Epoll类的作用是包装epoll文件描述符，<strong>它最重要的成员变量是一个epoll文件描述符，最重要的两个方法是poll和update。</strong><u><strong>poll方法包装了epoll_wait，在epoll描述符上等待事件的发生，当有事件发生后将新建的Channel填充到vector中，update方法包装了epoll_ctl，用来在epoll文件描述符上添加/修改/删除事件。update接收一个Channel作为参数，通过这个Channel可以获得要注册的事件(Channel::getEvents()方法)。</strong></u>以后所有涉及epoll描述符的操作都通过Epoll的这两个方法来完成。EventLoop本来是应该包括一个epoll描述符的，loop方法通过一个循环来调用epoll_wait，而现在epoll描述符在Epoll中，所以EventLoop只需要包含一个Epoll成员变量即可。EventLoop在循环中只需要调用Epoll::poll()方法就可以获得Channel列表，不需要直接调用epoll_wait了。</p>
+<p>3 <strong>Epoll和EventLoop应该是一一对应的关系，每个EventLoop有且只有一个Epoll。</strong> 在原始的muduo中，为了兼顾epoll/poll编程，作者为IO复用写了公共父类Poller，这里我进行了简化，直接实现了一个epoll的包装类Epoll而忽率了poll。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> EventLoop::loop()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">while</span>(!_quit)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;Channel*&gt; channels;</span><br><span class="line">        <span class="comment">// epoll类的操作</span></span><br><span class="line">        _poller-&gt;poll(&amp;channels);</span><br><span class="line"> </span><br><span class="line">        <span class="built_in">vector</span>&lt;Channel*&gt;::iterator it;</span><br><span class="line">        <span class="keyword">for</span>(it = channels.begin(); it != channels.end(); ++it)</span><br><span class="line">        &#123;</span><br><span class="line">            (*it)-&gt;handleEvent();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Epoll::poll(<span class="built_in">vector</span>&lt;Channel*&gt;* pChannels)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> fds = ::epoll_wait(_epollfd, _events, MAX_EVENTS, <span class="number">-1</span>);</span><br><span class="line">    <span class="keyword">if</span>(fds == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"epoll_wait error, errno:"</span> &lt;&lt; errno &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; fds; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Channel* pChannel = <span class="keyword">static_cast</span>&lt;Channel*&gt;(_events[i].data.ptr);</span><br><span class="line">        pChannel-&gt;setRevents(_events[i].events);</span><br><span class="line">        pChannels-&gt;push_back(pChannel);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-缓冲区"><a href="#3-缓冲区" class="headerlink" title="3.缓冲区"></a>3.缓冲区</h2><p>1） 输出缓冲区的实现：TcpConnection添加了一个代表发送缓冲区的成员变量_outBuf。用户将100k数据通过TcpConnection::send送给网络库，<strong>网络库先检查输出缓冲区是否为空(_outBuf-&gt;empty())，如果为空说明现在没有等待发送的数据，就直接将这100k数据送给write系统调用，看下操作系统能接受多少，然后将剩余的没发送玩的数据添加到输出缓冲区的尾部。</strong>如果发送缓冲区不为空<strong>，说明之前已经堆积了一些数据则本次操作就不尝试write了，直接将100k数据附加在发送缓冲区后。</strong>注意在将数据加入发送缓冲区后会将<strong>EPOLLOUT事件</strong>注册到epoll文件描述符(98行)。<strong>只有这样才能接到epoll文件描述符的通知来继续发送剩余的数据。</strong>当操作系统发现自己的缓冲区有更多可用空间时，通过epoll_wait返回来告知网络库，可以继续发了，这时Channel::handleWrite被触发，Channel::handleWrite会调用到TcpConnection::handleWrite，后者将剩余的数据通过write继续发送，<strong>并且在全部数据发送完毕后取消关注EPOLLOUT事件</strong>(76行)。<strong>取消关注EPOLLOUT非常关键，如果没有这一步，epoll_wait将在每次调用epoll_wait()时都立刻返回EPOLLOUT，因为每当操作系统有更多的发送缓冲区可以被填满时都会通知网络库，而网络库因为没有更多要发送的数据送给操作系统导致其无休止的通知。</strong></p>
+<p>3） 输入缓冲区的实现：TcpConnection添加了一个代表接收缓冲区的成员变量_inBuf，在每次handleRead()回调被调用时，使用read系统调用将数据读出来然后追加到输入缓冲区中，并通知用户。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> TcpConnection::send(<span class="keyword">const</span> <span class="built_in">string</span>&amp; message)&#123;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">int</span> n = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>(_outBuf-&gt;empty())&#123;</span><br><span class="line">        n = ::write(_sockfd, message.c_str(), message.size());</span><br><span class="line">        <span class="keyword">if</span>(n &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">"write error"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span>( n &lt; <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(message.size()))&#123;</span><br><span class="line">        *_outBuf += message.substr(n, message.size());</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">if</span>(_pChannel-&gt;isWriting())&#123;</span><br><span class="line">            <span class="comment">//add EPOLLOUT</span></span><br><span class="line">            _pChannel-&gt;enableWriting();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-定时事件"><a href="#4-定时事件" class="headerlink" title="4.定时事件"></a>4.定时事件</h2><p>两种思路</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">思路A</span><br><span class="line"></span><br><span class="line">定义一个定时器，维护一条定时器链表。 （Redis是链表，Nginx是红黑树）</span><br><span class="line">每个定时器包括了超时时间和回调函数，在链表中按照超时时间升序排列。</span><br><span class="line">每次主循环，首先获取链表中最小超时时间t，也就是说t时间后将处理满足条件定时事件，然后传入epoll_wait。</span><br><span class="line">epoll_wait返回后会有两种情况： </span><br><span class="line">1.t未到便发生了I/O事件。 </span><br><span class="line">2.t到了无I/O事件发生。</span><br><span class="line">返回后先处理I/O事件。然后再处理定时事件。 </span><br><span class="line">由于情况1我们会花费时间来处理I/O事件，所以我们处理定时事件的流程是先获取系统时间，然后遍历链表处理符合条件的事件（时间到了）。</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">思路B</span><br><span class="line"></span><br><span class="line">timerfd_create(2)把时间变成了一个文件描述符，该文件描述符在定时器超时的那一刻变得可读，这样就能很方便的融入epoll中，用统一的方式来处理IO时间和超时事件。</span><br></pre></td></tr></table></figure>
+<h2 id="5-多线程"><a href="#5-多线程" class="headerlink" title="5.多线程"></a>5.多线程</h2><p>上面是个基础框架，单线程的，虽然已经能够hold住小部分并发（这个具体量级需要测试），但是现代计算机都不会是简单的单核计算机，就跑一个线程，多少有点浪费，我8核的Ubuntu，你不要看不起我，所以要上多线程。</p>
+<p>多线程具体怎么上呢，网上也有很多文章介绍，比如这篇博客都介绍了<a href="http://blog.csdn.net/yusiguyuan/article/details/17591613" target="_blank" rel="noopener">http://blog.csdn.net/yusiguyuan/article/details/17591613</a></p>
+<p>总结起来就是3种比较高效，推荐第3种。</p>
+<p>1.<strong>reactor + thread pool</strong>（能适应密集计算）</p>
+<p>2.<strong>multiple reactors</strong>（能适应更大的突发I/O）</p>
+<p>3.<strong>multiple reactors + thread pool</strong>（one loop per thread + threadpool）（突发I/O与密集计算），subReactor可以有多个，但threadpool只有一个。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/" data-id="cjefs0fbs0006fix9frm51iwr" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2018/03/06/DDD(Domain-Driven Design)领域驱动设计/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          DDD领域驱动设计
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/03/04/通过core文件解决SIGSEGV问题/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">通过core文件解决SIGSEGV问题</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/03/06/DDD(Domain-Driven Design)领域驱动设计/">DDD领域驱动设计</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/05/怎么写一个高性能的服务器(二)：编程细节/">怎么写一个高性能的服务器(二)：编程细节</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/通过core文件解决SIGSEGV问题/">通过core文件解决SIGSEGV问题</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/基于swoole的服务治理(三)：注册中心/">基于swoole的服务治理(三)：注册中心</a>
+          </li>
+        
+          <li>
+            <a href="/2018/03/04/基于swoole的服务治理(二)：RPC/">基于swoole的服务治理(二)：RPC</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 Kyrie<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
